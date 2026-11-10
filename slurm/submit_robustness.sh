@@ -69,8 +69,8 @@ J_ANA=$(sid --export="${EXP}" --partition="${ROB_CPU_PARTITION}" \
             --dependency=afterok:${J_PFN}:${J_AG} \
             --job-name=shap_robana --cpus-per-task=4 --mem=16G --time=00:20:00 \
             --output=logs/shap_robana_%j.log \
-            --wrap="cd ${PROJECT} && source ${VENV}/bin/activate && \
-                    RUN_DIR=${RUN_DIR} python analyze_robustness.py")
+            --wrap="cd '${PROJECT}' && source '${VENV}/bin/activate' && \
+                    RUN_DIR='${RUN_DIR}' python analyze_robustness.py")
 echo "  analysis     job ${J_ANA} (after both arrays)"
 echo
 echo "Table S6 will be written to:"

@@ -182,6 +182,8 @@ by the as-run code from the same run directory.
   run on an Apple M-series Mac (TabPFN 8.0.3 on MPS, torch 2.9.1), not on the cluster.
   Its "All data" arm reproduces the cluster run's pooled TabPFN R² to within 0.0013 for
   every target (mean 0.8437 vs 0.8435).
+- `slurm/submit_robustness.sh`: paths in the final analysis job are now quoted so the
+  project can live in a folder whose name contains spaces. No other change.
 
 ---
 

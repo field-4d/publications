@@ -19,7 +19,8 @@ every stage is a Slurm job.
 
 ## What each article figure / table comes from
 
-All paths are inside the run directory the pipeline creates.
+Paths are inside the run directory the pipeline creates, except `<out>`, the output
+directory passed to the two post-training scripts (Figs. S5c, S7; Tables S7–S8).
 
 | article | file | produced by |
 |---|---|---|
@@ -27,17 +28,20 @@ All paths are inside the run directory the pipeline creates.
 | Fig. 4 learning curves (+ paired t-tests) | `plots/Learning_Curves_grid.pdf` | `plotting.plot_learning_curves` via `slurm/plots.sbatch` |
 | Fig. 5 SHAP, N + macronutrients | `plots/SHAP_Beeswarm_Macronutrients_paired.pdf` | `shap_module.render_article_figures` via `slurm/make_figures.sbatch` |
 | Fig. 6 SHAP, micronutrients | `plots/SHAP_Beeswarm_Micronutrients_paired.pdf` | same |
-| Fig. 7 cross-model attribution agreement | `plots/SHAP_Model_Comparison.pdf` | same |
-| Fig. 8 commercial validation (bias insets) | `plots/fig2_strategy_A.pdf` | `farmer_plots.fig2_single_strategy` via `slurm/farmer.sbatch` |
+| Fig. 7 grower-cohort stress test (bias insets) | `plots/fig2_strategy_A.pdf` | `farmer_plots.fig2_single_strategy` via `slurm/farmer.sbatch` |
+| Fig. S5c TabPFN with the xLSTM-imputed Experiment 4 removed | `<out>/fig_S5c_exp4_sensitivity.pdf` | `make_exp4_sensitivity.py` |
 | Fig. S6 DOB-SCV partition | `fig_S6_dobscv.pdf` | `make_dobscv_figure.py` |
+| Fig. S7 crop-specific R² and between-crop variation | `<out>/fig_S7_crop_r2.pdf` | `make_crop_figure.py` |
+| Fig. S8 cross-model attribution agreement | `plots/SHAP_Model_Comparison.pdf` | `shap_module.render_article_figures` via `slurm/make_figures.sbatch` |
 | Table S3–S4 AutoGluon configuration / architecture | `architecture/autogluon_leaderboard.csv` | `training.py` |
 | Table S5 TabPFN configuration | `config.py` + the kwargs in `training.py` | — |
 | Table S6 SHAP robustness | `shap_runs/robustness_rank_correlations.csv` | `analyze_robustness.py` via `slurm/submit_robustness.sh` |
+| Tables S7–S8 observed concentrations by crop | `<out>/table_S7_spinach.csv`, `<out>/table_S8_broccoli.csv` | `make_crop_figure.py` |
 | §2.5.2 leakage / coverage / dose-balance statistics | stdout | `verify_cv.py` |
 | §2.5.6 8- vs 32-estimator stability | `plots/shap_estimator_check_values.csv` | `shap_estimator_check.py` via `slurm/submit_estimator_check.sh` |
 
-Figs. 1, 2 and S1–S5 and Tables 1, 2, S1, S2 describe the experimental platform and
-are not produced by this code.
+Figs. 1, 2, S1–S4 and S5a–b and Tables 1, 2, S1, S2 describe the experimental platform
+and the xLSTM microclimate reconstruction, and are not produced by this code.
 
 ---
 
@@ -48,7 +52,7 @@ config.py              constants: features, targets, CV settings, model budgets,
 data.py                dataset loading; build_folds() — DOB-SCV (headline), StratifiedGroupKFold, stratified, LOEO
 training.py            per-(target, fold) training of AutoGluon + TabPFN; learning curves; leaderboard
 plotting.py            Fig. 3 and Fig. 4
-shap_module.py         Kernel SHAP for both learners; Figs. 5, 6, 7
+shap_module.py         Kernel SHAP for both learners; Figs. 5, 6, S8
 run.py                 single-process driver (train | plot | shap) for development
 verify_cv.py           leakage / experiment-coverage / dose-balance table for a CV scheme
 
@@ -59,12 +63,14 @@ make_manifests.py      SHAP cell manifests (main + robustness)
 analyze_robustness.py  Table S6
 shap_estimator_check.py  8- vs 32-member TabPFN SHAP stability
 make_dobscv_figure.py  Fig. S6
+make_exp4_sensitivity.py  Fig. S5c: TabPFN with vs without Experiment 4 (same DOB-SCV folds)
+make_crop_figure.py    Fig. S7 + Tables S7–S8, from the saved Fig. 3 predictions (no training)
 
 farmer_data.py         commercial-cohort loading; MISSING_FEATURES = [CT, SDW]
 farmer_strategies.py   Strategy A: retrain both learners on the 15 available features
-validate_farmer.py     runs Strategy A, writes farmer_predictions.csv + Fig. 8
-farmer_plots.py        Fig. 8
-regen_farmer_fig2.py   re-draw Fig. 8 from saved predictions without recomputing
+validate_farmer.py     runs Strategy A, writes farmer_predictions.csv + Fig. 7
+farmer_plots.py        Fig. 7
+regen_farmer_fig2.py   re-draw Fig. 7 from saved predictions without recomputing
 
 slurm/                 sbatch files + submit_*.sh orchestrators (see Reproduction)
 requirements-cluster.txt   pinned environment (Python 3.11, CUDA 12.4 build of torch)
@@ -103,12 +109,14 @@ Then, from the project directory:
 bash slurm/submit_fast.sh both        # training: DOB-SCV then StratifiedGroupKFold
                                       #   60 CPU tasks (AutoGluon, 32 cores each)
                                       #   12 GPU tasks (TabPFN, L40S, 8 cores each)
-                                      #   -> merge -> Figs. 3-4 -> Fig. 8, chained by dependency
-bash slurm/submit_shap.sh both        # Kernel SHAP, both learners -> Figs. 5-7
+                                      #   -> merge -> Figs. 3-4 -> Fig. 7, chained by dependency
+bash slurm/submit_shap.sh both        # Kernel SHAP, both learners -> Figs. 5, 6, S8
 RUN_DIR=<dir> bash slurm/submit_robustness.sh      # Table S6 (needs fold 0-2 models)
 bash slurm/submit_estimator_check.sh               # 8 vs 32 estimators
 python verify_cv.py                                # §2.5.2 partition statistics
 python make_dobscv_figure.py                       # Fig. S6
+python make_crop_figure.py --run-dir <dobscv run> --out <out>      # Fig. S7, Tables S7-S8
+python make_exp4_sensitivity.py --out <out> [--run-dir <dobscv run>]  # Fig. S5c (120 TabPFN fits)
 ```
 
 `submit_fast.sh` records the run directory it created in `slurm/CURRENT_RUN_DIR_<scheme>`;
@@ -162,8 +170,18 @@ repository is that code with the unreported analyses removed:
 - **Reduced to Strategy A only:** `farmer_strategies.py`, `farmer_plots.py`,
   `validate_farmer.py`, `regen_farmer_fig2.py`, `slurm/farmer.sbatch`.
 
-Figs. 3–8 rendered by this code were verified pixel-identical to those rendered by the
-as-run code from the same run directory.
+Figs. 3–7 and S8 rendered by this code were verified pixel-identical to those rendered
+by the as-run code from the same run directory.
+
+**Added 2026-11 (after the cluster run):**
+
+- `make_crop_figure.py` (Fig. S7, Tables S7–S8) re-scores the saved Fig. 3 predictions
+  of the DOB-SCV run; no model is trained. Its R², bootstrap intervals and between-crop
+  shares match the independently audited post-hoc evaluation to < 1e-4.
+- `make_exp4_sensitivity.py` (Fig. S5c) replaces an earlier script that was lost. It was
+  run on an Apple M-series Mac (TabPFN 8.0.3 on MPS, torch 2.9.1), not on the cluster.
+  Its "All data" arm reproduces the cluster run's pooled TabPFN R² to within 0.0013 for
+  every target (mean 0.8437 vs 0.8435).
 
 ---
 

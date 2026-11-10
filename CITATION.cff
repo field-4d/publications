@@ -2,6 +2,14 @@ cff-version: 1.2.0
 message: "If you use this pipeline, please cite the associated article."
 title: "Predictive ionomics pipeline: leakage-free cross-validated prediction of leaf mineral composition with AutoGluon and TabPFN"
 type: software
+version: "1.1.0"
+license: MIT
+# repository-code: fill in with the lab GitHub URL after the move
+abstract: >-
+  Code for the article's figures and tables: condition-grouped (DOB-SCV)
+  cross-validated prediction of 12 harvested-leaf mineral fractions with
+  AutoGluon 1.5 and TabPFN v3, crop-specific re-evaluation, Kernel-SHAP
+  attribution and the grower-cohort stress test.
 authors:
   - family-names: Shenhar
     given-names: Itamar
